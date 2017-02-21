@@ -1,2 +1,11 @@
-import: []
 package: github.com/radhus/kube-remote-provisioner
+import:
+- package: github.com/kubernetes-incubator/nfs-provisioner
+  version: ~1.0.3
+- package: k8s.io/client-go
+  version: ~2.0.0-alpha.1
+  subpackages:
+  - pkg/api/v1
+- package: github.com/mistifyio/go-zfs
+- package: google.golang.org/grpc
+  version: ~1.0.5
