@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+// TODO: can't we just use the protobuf definitions in k8s.io/.../v1 ?
+package api;
+
+// ReclaimPolicy matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeReclaimPolicy
+enum ReclaimPolicy {
+  RECLAIM_POLICY_UNKNOWN = 0;
+  RECYCLE = 1;
+  DELETE = 2;
+  RETAIN = 3;
+}
+
+// AccessMode matches
+// k8s.io/client-go/pkg/api/v1.PersistentAccessMode
+enum AccessMode {
+  ACCCESS_MODE_UNKNOWN = 0;
+  READ_WRITE_ONCE = 1;
+  READ_ONLY_MANY = 2;
+  READ_WRITE_MANY = 3;
+}
+
+// ClaimPhase matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeClaimPhase
+enum ClaimPhase {
+  CLAIM_PHASE_UNKNOWN = 0;
+  PENDING = 1;
+  BOUND = 2;
+  LOST = 3;
+}
+
+// ResourceRequirements matches
+// k8s.io/client-go/pkg/api/v1.ResourceRequirements
+// The map is reduced to only handle ResourceStorage key, and values are bytes.
+message ResourceRequirements {
+  uint64 limits = 1;
+  uint64 requests = 2;
+}
+
+// ClaimSpec matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeClaimSpec
+message ClaimSpec {
+  repeated AccessMode accessModes = 1;
+  // TODO: handle Selector? reserving index 2 for that.
+  ResourceRequirements resources = 3;
+  string volumeName = 4;
+}
+
+// ClaimStatus matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeClaimStatus
+message ClaimStatus {
+    ClaimPhase phase = 1;
+    repeated AccessMode accessModes = 2;
+    ResourceRequirements capacity = 3;
+}
+
+// Claim matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeClaim
+message Claim {
+  ClaimSpec spec = 1;
+  ClaimStatus status = 2;
+}
+
+// Volume matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolume
+message Volume {
+  ClaimSpec spec = 1;
+  ClaimStatus status = 2;
+}
+
+// NFSVolumeSource matches
+// k8s.io/client-go/pkg/api/v1.NFSVolumeSource
+message NFSVolumeSource {
+  string server = 1;
+  string path = 2;
+  bool readOnly = 3;
+}
+
+// Source matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeSource
+message Source {
+  // TODO: support anything else than NFS?
+  oneof type {
+    NFSVolumeSource nfs = 1;
+  }
+}
+
+// ProvisionRequest kind of matches
+// github.com/kubernetes-incubator/nfs-provisioner/controller.VolumeOptions
+message ProvisionRequest {
+  ReclaimPolicy reclaimPolicy = 1;
+  string name = 2;
+  Claim pvc = 3;
+  // TODO: handle Parameters?
+}
+
+// ProvisionResponse kind of matches
+// k8s.io/client-go/pkg/api/v1.PersistentVolumeSpec
+message ProvisionResponse {
+  uint64 capacity = 1;
+  Source source = 2;
+  repeated AccessMode accessModes = 3;
+  ReclaimPolicy reclaimPolicy = 4;
+}
+
+message DeleteRequest {
+}
+
+message DeleteResponse {}
+
+service AgentService {
+  rpc Provision (ProvisionRequest) returns (ProvisionResponse);
+  rpc Delete (DeleteRequest) returns (DeleteResponse);
+}
